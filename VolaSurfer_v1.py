@@ -30,7 +30,7 @@ def stoch_vol_mean_variance(strikes, maturities, spot, params):
     mean_reversion = params['mean_reversion'] * (params['long_term_mean'] - base_vol)
     return base_vol + mean_reversion * maturities[:, np.newaxis]
 
-def add_smile_and_skew(volatility_surface, strikes, spot, params):
+def add_smile_and_skew(volatility_surface, strikes, spot, params): 
     #TODO
     moneyness = np.log(strikes / spot)
     smile = params.get('smile_intensity', 0) * (moneyness**2)
