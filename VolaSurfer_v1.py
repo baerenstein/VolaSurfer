@@ -19,7 +19,7 @@ def jump_diffusion(strikes, maturities, spot, params):
     jump_probability = np.random.rand(len(maturities), len(strikes)) < params['jump_prob']
     jump_size = np.random.normal(params['jump_mean'], params['jump_std'], (len(maturities), len(strikes)))
     return base_vol + jump_probability * jump_size
-
+            
 def uncertain_volatility(strikes, maturities, spot, params):
     base_vol = deterministic_volatility(strikes, maturities, spot, params)
     uncertainty = params['uncertainty'] * np.random.rand(len(maturities), len(strikes))
