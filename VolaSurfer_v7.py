@@ -85,9 +85,10 @@ def parse_log_file(file_path):
                     })       
 
                 except:
-                    print(f"Bid index: {bid_index}")
-                    print(f"Attempting to convert: {parts[bid_index + 2]}")
-                    print(line)
+                    # print(f"Bid index: {bid_index}")
+                    # print(f"Attempting to convert: {parts[bid_index + 2]}")
+                    # print(line)
+                    pass
 
     df1 = pd.DataFrame(price_data)
     df2 = pd.DataFrame(option_data)
