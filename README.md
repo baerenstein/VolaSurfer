@@ -1,5 +1,3 @@
-Here's a README draft based on your files and project context:
-
 # VolaSurfer - Volatility Surface Analysis Tool
 
 ## Project Overview
@@ -17,25 +15,9 @@ VolaSurfer is a Python-based analytical tool designed for advanced options data 
 2. **Visualization of Implied Volatility Over Time**: Plot implied volatility with timestamps for efficient tracking of the volatility smile or skew trends.
 3. **Strike-Based Grouping**: Group and analyze options by strikes and maturities, enabling targeted risk assessment and hedging across different timeframes.
 
-## Dependencies
-- Python 3.x
-- Man Group’s **ArcticDB** for high-performance database handling
-- Matplotlib for data visualization
-- Numpy and Pandas for data manipulation
-
-## Setup
-1. Clone the repository and install dependencies:
-   ```bash
-   git clone <baerenstein/VolaSurfer>
-   cd VolaSurfer
-   pip install -r requirements.txt
-   ```
-2. Configure the data source by integrating your own options chain feed or historical data.
-
 ## How to Use
 1. **Data Aggregation and Processing**:
-   - Utilize `VolaSurfer_v7.py` to collect and normalize your options data.
-   - Make sure your data is in the proper format as defined in `SampleConsolidatedTradeBarLog.txt`.
+   - Utilize `VolaSurfer.py` to collect, analyse, and visualise your options data!
    - [Soon to support live data!]
 
 2. **Vega Bucketing**:
@@ -46,5 +28,5 @@ VolaSurfer is a Python-based analytical tool designed for advanced options data 
    - Execute the Python script to plot implied volatilities over time in a visually intuitive way.
 
 ## Contributions
-Contributions are welcomed! If you wish to extend the functionality, feel free to comment your thoughts, fork the repository, make your changes, and submit a pull request.
+Contributions are welcomed! If you wish to extend the functionality, feel free to comment your thoughts or even fork the repository, make your changes, and submit a pull request!
 
