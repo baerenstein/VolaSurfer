@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 import pandas as pd
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from scipy.interpolate import griddata
 
 from DataHandler import DataHandler
@@ -180,6 +180,45 @@ class VolatilityDashboard:
             self.logger.error(f"Error creating volatility heatmap: {str(e)}")
             return go.Figure()
 
+    def calculate_realized_volatility(self, df, window=30):
+        """Calculate realized volatility from close prices"""
+        df_sorted = df.sort_values('timestamp')
+        df_sorted['log_return'] = np.log(df_sorted['close'] / df_sorted['close'].shift(1))
+        realized_vol = df_sorted.groupby('timestamp')['log_return'].rolling(window=window).std().reset_index(level=0, drop=True) * np.sqrt(252)  # Annualized
+        return realized_vol
+
+    def create_realized_volatility_plot(self, df):
+        """Create realized volatility plot"""
+        try:
+            realized_vol = self.calculate_realized_volatility(df)
+            lagged_vol = realized_vol.shift(30)  # 30-day lag
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=realized_vol.index,
+                y=realized_vol.values,
+                mode='lines',
+                name='Realized Volatility',
+                line=dict(color='blue')
+            ))
+            fig.add_trace(go.Scatter(
+                x=lagged_vol.index,
+                y=lagged_vol.values,
+                mode='lines',
+                name='30-Day Lagged Volatility',
+                line=dict(color='red')
+            ))
+            fig.update_layout(
+                title="Realized Volatility Over Time",
+                xaxis_title="Date",
+                yaxis_title="Realized Volatility",
+                showlegend=True
+            )
+            return fig
+        except Exception as e:
+            self.logger.error(f"Error creating realized volatility plot: {str(e)}")
+            return go.Figure()
+
     def create_layout(self, df):
         """Create the dashboard layout"""
         self.app.layout = html.Div([
@@ -241,6 +280,17 @@ class VolatilityDashboard:
                                 html.P("The volatility term structure shows how implied volatility varies with time to expiration for at-the-money options. This helps visualize the market's expectation of future volatility over different time horizons.")
                             ], style={'width': '48%', 'float': 'right', 'display': 'inline-block', 'vertical-align': 'top'})
                         ])
+                    ])
+                ]),
+
+                dcc.Tab(label='Realized Volatility', children=[
+                    html.Div([
+                        dcc.Graph(id='realized-volatility-graph', figure=self.create_realized_volatility_plot(df)),
+                        html.Div([
+                            html.H3("Realized Volatility Explanation"),
+                            html.P("Realized volatility (blue line) is calculated from historical price data and represents the actual price fluctuations over time. It's typically annualized for easier comparison with implied volatilities."),
+                            html.P("The 30-day lagged volatility (red line) shows the realized volatility shifted 30 days into the future, allowing for comparison between current and past volatility levels.")
+                        ], style={'width': '80%', 'margin': '20px auto'})
                     ])
                 ])
             ])
