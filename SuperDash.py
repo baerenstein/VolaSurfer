@@ -58,21 +58,38 @@ class VolatilityDashboard:
         
         return grid_x, grid_y, grid_z
 
-    def create_volatility_surface(self, df):
+    def create_volatility_surface(self, df, interpolate=False):
         """Create 3D volatility surface visualization"""
         try:
-            grid_x, grid_y, grid_z = self.interpolate_volatility_surface(df)
-            
-            surface = go.Figure(data=[go.Surface(
-                z=grid_z,
-                x=grid_x[0],
-                y=grid_y[:,0],
-                colorscale='rdbu',
-                colorbar=dict(title='Implied Volatility', titleside='right')
-            )])
+            if interpolate:
+                grid_x, grid_y, grid_z = self.interpolate_volatility_surface(df)
+                
+                surface = go.Figure(data=[go.Surface(
+                    z=grid_z,
+                    x=grid_x[0],
+                    y=grid_y[:,0],
+                    colorscale='rdbu',
+                    colorbar=dict(title='Implied Volatility', titleside='right')
+                )])
+                title = "Interpolated Implied Volatility Surface"
+            else:
+                df_calls = df[df['option_type'] == 'Call']
+                surface = go.Figure(data=[go.Scatter3d(
+                    x=df_calls['days_to_expiry'],
+                    y=df_calls['log_strike'],
+                    z=df_calls['implied_volatility'],
+                    mode='markers',
+                    marker=dict(
+                        size=4,
+                        color=df_calls['implied_volatility'],
+                        colorscale='rdbu',
+                        opacity=0.8
+                    )
+                )])
+                title = "Raw Implied Volatility Surface"
 
             surface.update_layout(
-                title="Interpolated Implied Volatility Surface",
+                title=title,
                 scene=dict(
                     xaxis_title="Days to Expiry",
                     yaxis_title="Log Strike",
@@ -173,8 +190,17 @@ class VolatilityDashboard:
                 dcc.Tab(label='Surface and Heatmap', children=[
                     html.Div([
                         html.Div([
-                            dcc.Graph(figure=self.create_volatility_surface(df), style={'width': '70%', 'display': 'inline-block'}),
+                            dcc.Graph(id='volatility-surface', style={'width': '70%', 'display': 'inline-block'}),
                             html.Div([
+                                dcc.Dropdown(
+                                    id='surface-interpolation-dropdown',
+                                    options=[
+                                        {'label': 'Raw Surface', 'value': 'raw'},
+                                        {'label': 'Interpolated Surface', 'value': 'interpolated'}
+                                    ],
+                                    value='raw',
+                                    style={'width': '100%', 'margin': '10px 0'}
+                                ),
                                 html.H3("Volatility Surface Explanation"),
                                 html.P("The volatility surface shows how implied volatility varies with both strike price and time to expiration. The x-axis represents days to expiry, the y-axis represents the log strike price, and the z-axis (color) represents the implied volatility.")
                             ], style={'width': '25%', 'float': 'right', 'padding': '20px'})
@@ -219,6 +245,13 @@ class VolatilityDashboard:
                 ])
             ])
         ])
+
+        @self.app.callback(
+            Output('volatility-surface', 'figure'),
+            Input('surface-interpolation-dropdown', 'value')
+        )
+        def update_volatility_surface(interpolation):
+            return self.create_volatility_surface(df, interpolate=(interpolation == 'interpolated'))
 
         @self.app.callback(
             [Output('smile-graph', 'figure'),
