@@ -147,9 +147,46 @@ class Statistics:
         return combined_stats
 
 
-# # Usage example:
-# stats = Statistics(df)
-# summary = stats.generate_summary()
-# print(summary['overall_stats'])
-# print(summary['smile_stats'])
-# print(summary['term_structure_stats'])
+class Statistics2:
+    def __init__(self, data) -> None:
+        self.data = data 
+        self.results ={}
+
+    def calculate_basic_statistics(self, columns):
+        # min
+        # median
+        # max
+        # std 
+        # skew
+        # kurt
+        # quantiles
+        pass
+
+    def calculate_probabilities(self):
+        # observation within 1, 2 and 3 std
+        # observation to be at mean after 10% and 90% quantile
+        pass
+
+    def get_term_structure(self):
+        # get atm options
+        # sort by maturity
+        # get implied volatility
+        # assign each term an implied volatility, if neccessary interpolate
+        # attribute: shape of term structure: concave, convex, flat
+        return # term_structure, dict: 'term 1': implied volatility, 'term 2': implied vol ...
+    
+    def get_options_skew(self, maturity):
+        # get all options for selected maturity
+        # sort by strike
+        # get implied vol
+        # attribute: max and min slope
+        return # options_skew, dict
+    
+    def get_surface(self):
+        # get whole options chain OR subset
+        # interpolate implied volatilities to fit surface grid
+        return # surface
+    
+    def get_iv_index(self, lag):
+        iv_index = self.data[f'maturity_{lag}']['atm_strike']['implied_volatility']
+        return iv_index 

@@ -45,12 +45,6 @@ def bs(F, K, V, o = 'call'):
     return P
 
 def bs_vega(S, K, T, r, sigma):
-    # Spot price
-    # K: Strike price
-    # T: time to maturity
-    # r: interest rate (1=100%)
-    # sigma: volatility of underlying asset
-    
     d1 = (np.log(S/K) + (r + 0.5 * np.power(sigma, 2)) * T) / sigma *np.sqrt(T)
     vg = S * norm.pdf(d1, 0.0, 1.0) * np.sqrt(T)
     vega = np.maximum(vg, 1e-19)

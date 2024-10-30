@@ -2,12 +2,13 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime
-from Utils import Utils
+from Utils import Utils, ModelUtils
 from ModelUtils import bsinv, find_vol
 
 class DataHandler:
 	def __init__(self):
 		self.util = Utils()
+		self.modelutils = ModelUtils()
 
 	def parse_file(self, file_path=int):
 
@@ -112,33 +113,69 @@ class DataHandler:
 		
 		return merged_df
 	
-	def process_data(
-			self, 
-            df=pd.DataFrame,
-            bins=tuple, 
-            index_lag=int, 
-            weighting_method=str):
+	def get_basic_data(self, df=pd.DataFrame):
 		"""
-		Creates features.
-		"""
-		util = self.util
+		Create dataframe with essential features, namely mid prices, time to maturity and implied volatility.
 
+		Args:
+			df (pd.DataFrame): pandas dataframe with option prices.
+
+		Returns:
+			df
+		"""
 		df['bid_mid'] = (df['bid_open'] + df['bid_close']) / 2
 		df['ask_mid'] = (df['ask_open'] + df['ask_close']) / 2
 		df['mid_price'] = (df['bid_mid'] + df['ask_mid']) / 2
 		df['maturity'] = pd.to_datetime(df['maturity'])
 		df['T'] = (df['maturity'] - df['timestamp']).dt.total_seconds() / (365 * 24 * 60 * 60)
+		df['days_to_expiry'] = (df['maturity'] - df['timestamp']).dt.total_seconds() / (24 * 60 * 60)
 	
-	# def bsinv(P, F, K, t, o = 'call'):
-
-		df['implied_volatility'] = df.apply(lambda row: util.calc_implied_volatility(
+		df['implied_volatility'] = df.apply(lambda row: self.util.calc_implied_volatility(
+				row['option_type'],
 				row['mid_price'], 
 				row['strike'], 
 				row['T'], 
 				row['close'], 
 				r=0.05), 
 				axis=1)
-		df['log_strike'] = 1 + np.log(df['strike'] / df['close'])	
-		# df[f'iv_index{index_lag}'] = iv_index(index_lag, weighting_method)	
+		
+		# df['vol_of_iv']
+
+		df['log_strike'] = 1 + np.log(df['strike'] / df['close'])
+		
+		df['vega'] = df.apply(lambda row: self.modelutils.bs_vega(
+				row['close'], 
+				row['strike'], 
+				row['T'], 
+				0.05,
+				row['implied_volatility']), 
+				axis=1)
 		
 		return df
+
+	def get_advanced_features(
+			self, 
+            df=pd.DataFrame,
+            strike_bins=int, 
+            maturity_bins=int, 
+            index_lag=int, 
+            weighting_method=str):
+		"""_summary_
+
+		Args:
+			df (pd.DataFrame): pandas dataframe with option prices and basic features.
+			bins (_type_, optional): _description_. Defaults to tuple.
+			index_lag (_type_, optional): _description_. Defaults to int.
+			weighting_method (_type_, optional): _description_. Defaults to str.
+		"""
+
+		df = self.util.binning(df, strike_bins) #, weighting_method
+		print(df)
+
+		# df[f'iv_index{index_lag}'] = iv_index(df, lag, weighting_method)
+		return df	
+	
+	def calculate_greeks(self, df):
+		df_greeks = self.util.greeks(df['mid_price'])
+		return df_greeks
+

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from scipy.interpolate import griddata
 
 from DataHandler import DataHandler
+# from VolatilitySurfaceAnimation import VolatilitySurfaceAnimation
 
 class VolatilityDashboard:
     """A dashboard for visualizing and analyzing option volatility surfaces and related metrics"""
@@ -18,6 +19,7 @@ class VolatilityDashboard:
         self.app = dash.Dash(__name__)
         self.logger = logging.getLogger(__name__)
         self.data_handler = DataHandler()
+        # self.vol_surface_animation = VolatilitySurfaceAnimation()
         self.setup_logging()
         
     def setup_logging(self):
@@ -31,7 +33,7 @@ class VolatilityDashboard:
         """Prepare options data using DataHandler"""
         try:
             df = self.data_handler.parse_file(file_path)
-            df = self.data_handler.process_data(df)
+            df = self.data_handler.get_basic_data(df)
             df['days_to_expiry'] = (df['maturity'] - df['timestamp']).dt.total_seconds() / (24 * 60 * 60)
             df = df[df['implied_volatility'].notna() & 
                    (df['implied_volatility'] > 0) & 
@@ -250,7 +252,17 @@ class VolatilityDashboard:
                                 html.H3("Volatility Heatmap Explanation"),
                                 html.P("The heatmap provides a 2D view of the volatility surface. Darker colors indicate higher implied volatility. This visualization helps identify patterns in volatility across different strike prices and expiration dates.")
                             ], style={'width': '25%', 'float': 'right', 'padding': '20px'})
-                        ])
+                        ]),
+                        # html.Div([
+                        #     dcc.Graph(
+                        #         figure=self.vol_surface_animation.create_figure(),
+                        #         style={'width': '70%', 'display': 'inline-block'}
+                        #     ),
+                        #     html.Div([
+                        #         html.H3("Rolling Volatility Animation Explanation"),
+                        #         html.P("This animation shows how the volatility surface evolves over time using a moving window approach. The heatmap updates continuously to show the latest volatility patterns across different strikes and maturities.")
+                        #     ], style={'width': '25%', 'float': 'right', 'padding': '20px'})
+                        # ])
                     ])
                 ]),
                 
