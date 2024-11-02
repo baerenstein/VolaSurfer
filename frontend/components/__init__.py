@@ -1,3 +1,3 @@
 from . import rolling_animation
-from . import volatility_smile
-from . import volatility_surface
+from . import vol_smile
+from . import vol_surface

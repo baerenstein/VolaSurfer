@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timedelta
 from scipy.interpolate import griddata
 
-from DataHandler import DataHandler
+from backend.core.data.DataHandler import DataHandler
 # from VolatilitySurfaceAnimation import VolatilitySurfaceAnimation
 
 class VolatilityDashboard:
@@ -153,11 +153,11 @@ class VolatilityDashboard:
             self.logger.error(f"Error creating term structure plot: {str(e)}")
             return go.Figure()
 
-    def create_volatility_heatmap(self, df):
+    def create_volatility_heatmap(self, df, bins=10):
         """Create volatility heatmap using binned implied volatilities"""
         try:
-            df['log_strike_bin'] = pd.cut(df['log_strike'], bins=20)
-            df['days_to_expiry_bin'] = pd.cut(df['days_to_expiry'], bins=20)
+            df['log_strike_bin'] = pd.cut(df['log_strike'], bins=bins)
+            df['days_to_expiry_bin'] = pd.cut(df['days_to_expiry'], bins=bins)
             pivot = df.pivot_table(
                 values='implied_volatility',
                 index='log_strike_bin',

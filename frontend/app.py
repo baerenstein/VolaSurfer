@@ -3,9 +3,9 @@ from dash import html
 from dash.dependencies import Input, Output
 from .layouts.main_layout import create_layout
 from .components.rolling_animation import VolatilitySurfaceAnimation
-from .components.volatility_surface import VolatilitySurface
-from .components.volatility_smile import VolatilitySmile
-from .utils.data_processor import DataProcessor
+from .components.vol_surface import VolatilitySurface
+from .components.vol_smile import VolatilitySmile
+from backend.core.data.DataHandler import DataHandler
 
 class VolatilityDashboard:
     def __init__(self):

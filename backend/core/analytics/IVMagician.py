@@ -2,8 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import logging
-from DataHandler import DataHandler
-from DataMagician import OptionsDataMagician
+from core.data.DataHandler import DataHandler
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)

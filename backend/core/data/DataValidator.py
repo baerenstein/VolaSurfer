@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 import logging
 
-from DataHandler import DataHandler
+from core.data.DataHandler import DataHandler
 
 dh = DataHandler()
 

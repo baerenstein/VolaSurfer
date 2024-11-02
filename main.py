@@ -1,8 +1,8 @@
-from DataHandler import DataHandler
-from rBergomi import rBergomi
-from NNCalibrator import NeuralNetworkPricer
-from DashBoard import Dashboard
-from SuperDash import VolatilityDashboard
+from backend.data.DataHandler import DataHandler
+from backend.models.rBergomi import rBergomi
+from backend.models.NNCalibrator import NeuralNetworkPricer
+from frontend.DashBoard import Dashboard
+from frontend.SuperDash import VolatilityDashboard
 from Statistics import Statistics
 import logging
 
@@ -17,7 +17,7 @@ class VolaSurfer:
     def main(self):
         try:
             df = self.dh.parse_file(self.file_path)
-            df = self.dh.get_advanced_features(df)
+            df = self.dh.get_binned_data(df)
             logging.info("Data loaded successfully")
 
             stats = Statistics(df)

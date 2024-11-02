@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime
-from Utils import Utils, ModelUtils
-from ModelUtils import bsinv, find_vol
+from core.analytics.Utils import Utils, ModelUtils
+
 
 class DataHandler:
 	def __init__(self):
@@ -139,8 +139,6 @@ class DataHandler:
 				r=0.05), 
 				axis=1)
 		
-		# df['vol_of_iv']
-
 		df['log_strike'] = 1 + np.log(df['strike'] / df['close'])
 		
 		df['vega'] = df.apply(lambda row: self.modelutils.bs_vega(
@@ -153,7 +151,7 @@ class DataHandler:
 		
 		return df
 
-	def get_advanced_features(
+	def get_binned_data(
 			self, 
             df=pd.DataFrame,
             strike_bins=int, 
@@ -174,8 +172,3 @@ class DataHandler:
 
 		# df[f'iv_index{index_lag}'] = iv_index(df, lag, weighting_method)
 		return df	
-	
-	def calculate_greeks(self, df):
-		df_greeks = self.util.greeks(df['mid_price'])
-		return df_greeks
-

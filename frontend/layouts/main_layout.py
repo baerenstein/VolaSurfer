@@ -1,7 +1,7 @@
 from dash import html, dcc
 from dash.dependencies import Input, Output
 
-def create_layout(vol_surface_animation, vol_surface, vol_smile):
+def create_main_layout(vol_surface_animation, vol_surface, vol_smile):
     return html.Div([
         html.H1('Options Volatility Analysis Dashboard', 
                style={'textAlign': 'center', 'padding': '20px'}),
