@@ -10,9 +10,10 @@ print("Starting program...")
 
 # Define the option contracts we want to track (without Q prefix for matching)
 OPTION_CONTRACTS = [
-    "O:NVDA241129C00138000",
-    "O:NVDA241129C00137000",
-    # "O:NKE241220P00070000"
+    "O:NKE241227P00075000",
+    "O:NKE241227P00074000",
+    # "O:NKE241227P00070000",
+    # "O:NKE241227P00069000",
 ]
 
 print(f"Monitoring contracts: {OPTION_CONTRACTS}")
@@ -61,7 +62,7 @@ colors = {
 }
 
 def handle_msg(msgs: List[WebSocketMessage]):
-    print(f"Received message batch. Number of messages: {len(msgs)}")
+    # print(f"Received message batch. Number of messages: {len(msgs)}")
     
     global contract_data
     
@@ -86,7 +87,7 @@ def handle_msg(msgs: List[WebSocketMessage]):
                 contract_data[contract_symbol]['ask_prices'].pop(0)
                 contract_data[contract_symbol]['timestamps'].pop(0)
 
-            print(f"Data points for {contract_symbol}: {len(contract_data[contract_symbol]['bid_prices'])}")
+            # print(f"Data points for {contract_symbol}: {len(contract_data[contract_symbol]['bid_prices'])}")
 
     try:
         # Clear and redraw the plot
@@ -98,7 +99,7 @@ def handle_msg(msgs: List[WebSocketMessage]):
             option_type = 'Call' if 'C' in contract else 'Put'
             
             if data['bid_prices']:  # Only plot if we have data
-                print(f"Plotting {option_type} option data. Points: {len(data['bid_prices'])}")
+                # print(f"Plotting {option_type} option data. Points: {len(data['bid_prices'])}")
                 
                 ax.plot(data['timestamps'], data['bid_prices'],
                         label=f'{option_type} Bid', 
