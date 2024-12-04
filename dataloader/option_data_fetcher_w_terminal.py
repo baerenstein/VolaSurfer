@@ -202,6 +202,12 @@ class EnhancedOptionFetcher:
                 options_path = data_dir / f"options_{current_date}.parquet"
                 merged_df.to_parquet(options_path, engine='pyarrow')
                 print(f"Options data saved to {options_path}")
+            
+                # Save quotes to CSV
+                current_time = datetime.now().strftime("%Y%m%d")
+                csv_filename = data_dir / f"options_{current_time}.csv"
+                merged_df.reset_index().to_csv(csv_filename, index=False)
+                print(f"Selected options data saved to {csv_filename}")
                 
         except Exception as e:
             print(f"Error saving market data: {str(e)}")
@@ -209,8 +215,8 @@ class EnhancedOptionFetcher:
 def main(save_data=False):
     fetcher = EnhancedOptionFetcher(
         ticker="NKE",
-        num_strikes=10,
-        days_to_expiration=45,
+        num_strikes=3,
+        days_to_expiration=20,
         max_contract_tickers=5
     )
     
@@ -269,4 +275,4 @@ def main(save_data=False):
         print(f"Error in main: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    main(save_data=True)
