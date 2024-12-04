@@ -13,7 +13,7 @@ from streamlit.runtime.scriptrunner import add_script_run_ctx
 import os
 from dataclasses import dataclass
 from typing import Dict, List, Set
-from backend.core.models.BlackScholesSolver import BlackScholesIV
+from models.BlackScholesSolver import BlackScholesIV
 
 @dataclass
 class OptionData:
