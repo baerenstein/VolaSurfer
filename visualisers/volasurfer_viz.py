@@ -14,6 +14,7 @@ import os
 from dataclasses import dataclass
 from typing import Dict, List
 from models.BlackScholesSolver import BlackScholesIV
+from scipy.interpolate import griddata
 
 
 @dataclass
@@ -178,7 +179,7 @@ class VolatilitySurfaceStreamer:
                 )
                 contract.implied_vols.append(impl_vol)
 
-    def create_vol_surface(self) -> go.Figure:
+    def create_vol_surface(self, interpolation_method: str) -> go.Figure:
         """Create volatility surface plot"""
         # Collect latest IVs
         data = []
@@ -213,6 +214,10 @@ class VolatilitySurfaceStreamer:
                 if not matching.empty:
                     vol_matrix[i, j] = matching["implied_vol"].iloc[0]
 
+        # Interpolate to create a smoother surface using the selected method
+        grid_x, grid_y = np.meshgrid(maturities, strikes)
+        vol_matrix = griddata((df["maturity"], df["strike"]), df["implied_vol"], (grid_x, grid_y), method=interpolation_method)
+
         # Create surface plot with swapped axes
         fig = go.Figure(data=[go.Surface(x=T, y=K, z=vol_matrix)])
 
@@ -223,14 +228,8 @@ class VolatilitySurfaceStreamer:
                 xaxis_title="Time to Maturity (Days)",
                 yaxis_title="Strike Price",
                 zaxis_title="Implied Volatility",
-                # Set camera to bird's eye view
                 camera=dict(
-                    # eye=dict(x=0, y=0, z=2),
-                    # center=dict(x=0, y=0, z=0),
-                    # up=dict(x=0, y=1, z=0)
-                    eye=dict(
-                        x=1.5, y=1.5, z=0.8
-                    ),  # Lowered z value for lower viewing angle
+                    eye=dict(x=1.5, y=1.5, z=0.8),
                     center=dict(x=0, y=0, z=0),
                     up=dict(x=0, y=0, z=1),
                 ),
@@ -255,11 +254,14 @@ def main(ticker):
     if "vss" not in st.session_state:
         st.session_state.vss = VolatilitySurfaceStreamer(
             underlying=ticker,
-            num_strikes=20,
+            num_strikes=10,
             days_to_expiration=[
                 7,
                 14,
                 30,
+                # 45,
+                # 60,
+                # 90,
             ],
         )
 
@@ -268,17 +270,25 @@ def main(ticker):
             selected_contracts = st.session_state.vss.select_contracts()
             st.sidebar.write(f"Selected {len(selected_contracts)} contracts")
 
-            # # Display contract details
-            # for c in selected_contracts:
-            #     st.sidebar.write(f"{c.ticker}: {c.contract_type.upper()} ${c.strike_price}")
+            # Display unique strikes and maturities
+            unique_strikes = len(set(c.strike_price for c in selected_contracts))  # Updated here
+            unique_maturities = len(set((datetime.strptime(c.expiration_date, "%Y-%m-%d") - datetime.now()).days for c in selected_contracts))
+            st.sidebar.write(f"Unique Strikes: {unique_strikes}")
+            st.sidebar.write(f"Unique Maturities: {unique_maturities}")
+
+    # Add an option to choose interpolation style
+    interpolation_method = st.sidebar.selectbox(
+        "Select Interpolation Method:",
+        options=["linear", "cubic", "nearest"],  # Add more options as needed
+        index=0  # Default to 'cubic'
+    )
 
     # Create plot placeholders
     surface_plot = st.empty()
-    # metrics_cols = st.columns(len(st.session_state.vss.contracts))
 
     def update_display():
         # Update surface plot
-        fig = st.session_state.vss.create_vol_surface()
+        fig = st.session_state.vss.create_vol_surface(interpolation_method)
         if fig:
             surface_plot.plotly_chart(fig)
 
@@ -315,9 +325,9 @@ def main(ticker):
     # Add a delay between updates
     if st.session_state.websocket_running:
         update_display()
-        time.sleep(10)  # Add a x-second delay between updates
+        time.sleep(15)  # Add a x-second delay between updates
         st.rerun()
 
 
 if __name__ == "__main__":
-    main(ticker="TSLA")
+    main(ticker="NVDA")
