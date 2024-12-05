@@ -1,20 +1,22 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import requests
-import time
-from polygon import WebSocketClient, RESTClient
-from polygon.websocket.models import WebSocketMessage, Market
-from datetime import datetime, timedelta
-import plotly.graph_objects as go
-from collections import deque
-import threading
-from streamlit.runtime.scriptrunner import add_script_run_ctx
 import os
-from dataclasses import dataclass
+import time
+import threading
+from collections import deque
+from datetime import datetime, timedelta
 from typing import Dict, List
-from models.BlackScholesSolver import BlackScholesIV
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import requests
+from polygon import RESTClient, WebSocketClient
+from polygon.websocket.models import Market, WebSocketMessage
 from scipy.interpolate import griddata
+import streamlit as st
+from streamlit.runtime.scriptrunner import add_script_run_ctx
+
+from dataclasses import dataclass
+from models.BlackScholesSolver import BlackScholesIV
 
 
 @dataclass
@@ -218,8 +220,8 @@ class VolatilitySurfaceStreamer:
         grid_x, grid_y = np.meshgrid(maturities, strikes)
         vol_matrix = griddata((df["maturity"], df["strike"]), df["implied_vol"], (grid_x, grid_y), method=interpolation_method)
 
-        # Create surface plot with swapped axes
-        fig = go.Figure(data=[go.Surface(x=T, y=K, z=vol_matrix)])
+        # Create surface plot with swapped axes and custom colorscale
+        fig = go.Figure(data=[go.Surface(x=T, y=K, z=vol_matrix, showscale=False, colorscale="sunset")])
 
         # Update layout with bird's eye view and swapped axis labels
         fig.update_layout(
@@ -236,33 +238,33 @@ class VolatilitySurfaceStreamer:
                 xaxis=dict(autorange="reversed"),
                 yaxis=dict(autorange="reversed"),
             ),
-            width=800,
-            height=800,
+            width=800,  # Adjust width
+            height=500,  # Adjust height
         )
 
         return fig
 
 
-st.set_page_config(layout="wide")
+def main():
+    # Sidebar for navigation
+    st.sidebar.title("Navigation")
+    page = st.sidebar.selectbox("Select a page:", ["Volatility Surface", "Bid Ask Prices", "Volatility Series"])
 
+    if page == "Volatility Surface":
+        show_volatility_surface()
+    elif page == "Bid Ask Prices":
+        show_bid_ask_prices()
+    elif page == "Volatility Series":
+        show_volatility_series()
 
-def main(ticker):
-    # st.set_page_config(layout="wide")
-    st.title("Live Option Volatility Surface")
-
-    # Initialize volatility surface streamer
+def show_volatility_surface():
+    st.title("Volatility Surface")
+    # Your existing volatility surface code here
     if "vss" not in st.session_state:
         st.session_state.vss = VolatilitySurfaceStreamer(
-            underlying=ticker,
+            underlying="NKE",  # You can change this to a dynamic input if needed
             num_strikes=10,
-            days_to_expiration=[
-                7,
-                14,
-                30,
-                # 45,
-                # 60,
-                # 90,
-            ],
+            days_to_expiration=[7, 14, 30],
         )
 
         # Fetch initial data
@@ -271,7 +273,7 @@ def main(ticker):
             st.sidebar.write(f"Selected {len(selected_contracts)} contracts")
 
             # Display unique strikes and maturities
-            unique_strikes = len(set(c.strike_price for c in selected_contracts))  # Updated here
+            unique_strikes = len(set(c.strike_price for c in selected_contracts))
             unique_maturities = len(set((datetime.strptime(c.expiration_date, "%Y-%m-%d") - datetime.now()).days for c in selected_contracts))
             st.sidebar.write(f"Unique Strikes: {unique_strikes}")
             st.sidebar.write(f"Unique Maturities: {unique_maturities}")
@@ -279,8 +281,8 @@ def main(ticker):
     # Add an option to choose interpolation style
     interpolation_method = st.sidebar.selectbox(
         "Select Interpolation Method:",
-        options=["linear", "cubic", "nearest"],  # Add more options as needed
-        index=0  # Default to 'cubic'
+        options=["linear", "cubic", "nearest"],
+        index=0
     )
 
     # Create plot placeholders
@@ -325,9 +327,111 @@ def main(ticker):
     # Add a delay between updates
     if st.session_state.websocket_running:
         update_display()
-        time.sleep(15)  # Add a x-second delay between updates
+        time.sleep(5)  # Add a x-second delay between updates
         st.rerun()
 
+def show_bid_ask_prices():
+    st.title("Bid Ask Prices")
+
+    # Move the contract selection to the sidebar
+    if "vss" in st.session_state:
+        contracts = list(st.session_state.vss.contracts.keys())
+        selected_contracts = st.sidebar.multiselect("Select contracts:", contracts)
+
+        # Initialize contract data if not already done
+        if selected_contracts:
+            if "contract_data" not in st.session_state:
+                st.session_state.contract_data = {}
+
+            # Initialize data for each selected contract
+            for contract in selected_contracts:
+                if contract not in st.session_state.contract_data:
+                    st.session_state.contract_data[contract] = {
+                        "bid_prices": deque(maxlen=100000),
+                        "ask_prices": deque(maxlen=100000),
+                        "timestamps": deque(maxlen=100000),
+                    }
+
+            chart_placeholder = st.empty()
+
+            # Define a color map for contracts
+            colors = {contract: f'rgba({np.random.randint(0, 255)}, {np.random.randint(0, 255)}, {np.random.randint(0, 255)}, 1)' for contract in selected_contracts}
+
+            def update_chart():
+                fig = go.Figure()
+
+                for contract in selected_contracts:
+                    data = st.session_state.contract_data[contract]
+                    if len(data["bid_prices"]) > 0:
+                        # Use the same color for bid and ask prices
+                        color = colors[contract]
+                        fig.add_trace(
+                            go.Scatter(
+                                x=list(data["timestamps"]),
+                                y=list(data["bid_prices"]),
+                                name=f"{contract} Bid",
+                                line=dict(color=color),
+                            )
+                        )
+                        fig.add_trace(
+                            go.Scatter(
+                                x=list(data["timestamps"]),
+                                y=list(data["ask_prices"]),
+                                name=f"{contract} Ask",
+                                line=dict(color=color, dash='dash'),  # Optional: make ask line dashed
+                            )
+                        )
+
+                fig.update_layout(
+                    title="Live Bid and Ask Prices", 
+                    xaxis_title="Time", 
+                    yaxis_title="Price", 
+                    width=1500,  # Adjusted width to fit the screen
+                    height=600
+                )
+
+                chart_placeholder.plotly_chart(fig, use_container_width=True)
+
+            def handle_msg(msgs):
+                for m in msgs:
+                    contract_symbol = str(m.symbol)
+                    if contract_symbol in selected_contracts:
+                        current_time = datetime.now()
+
+                        data = st.session_state.contract_data[contract_symbol]
+                        data["bid_prices"].append(m.bid_price)
+                        data["ask_prices"].append(m.ask_price)
+                        data["timestamps"].append(current_time)
+
+                        update_chart()
+
+            def start_websocket():
+                api_key = os.getenv("API_KEY")
+                client = WebSocketClient(api_key=api_key, market=Market.Options)
+
+                subscription_string = ",".join(f"Q.{contract}" for contract in selected_contracts)
+                client.subscribe(subscription_string)
+
+                try:
+                    client.run(handle_msg)
+                except Exception as e:
+                    st.error(f"WebSocket error: {str(e)}")
+
+            if st.sidebar.button("Start Streaming"):
+                websocket_thread = threading.Thread(target=start_websocket)
+                websocket_thread.daemon = True
+                add_script_run_ctx(websocket_thread)
+                websocket_thread.start()
+
+            update_chart()
+        else:
+            st.warning("No contracts available to display.")
+    else:
+        st.warning("Volatility Surface data not loaded yet.")
+
+def show_volatility_series():
+    st.title("Volatility Series")
+    st.write("This page will provide information on the volatility series for the selected options.")
 
 if __name__ == "__main__":
-    main(ticker="NVDA")
+    main()
